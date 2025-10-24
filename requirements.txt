@@ -1,5 +1,4 @@
 cohere
-os
 dotenv
 flask_cors
 flask
