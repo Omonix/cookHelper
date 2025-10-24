@@ -1,4 +1,4 @@
-import cohere, os, dotenv, flask_cors, flask, pymongo, bson
+import cohere, os, dotenv, flask_cors, flask, pymongo
 
 def to_json(doc):
     doc["_id"] = str(doc["_id"])
