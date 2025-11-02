@@ -10,6 +10,7 @@ DB_KEY = os.getenv('DB_KEY')
 URL_API = os.getenv('URL_API')
 app = flask.Flask(__name__)
 flask_cors.CORS(app)
+
 try:
     co = cohere.Client(AI_KEY)
     print("Connected to AI ✅")
@@ -20,6 +21,18 @@ try:
     print("Connected to Data Base ✅")
 except:
     print("Error 501 : Can't connect to Data Base ❌")
+
+db = client["childs"]
+#user1 = db["user1"]
+
+@app.route("/food", methods=["POST"], strict_slashes=False)
+def food():
+    data = flask.request.get_json()
+    user_selected = db[data.get("user")]
+    new_data = {'food': data.get("food"), 'like': data.get("like")}
+    result = user_selected.insert_one(new_data)
+    return flask.jsonify({"_id": str(result.inserted_id)}), 201
+
 if __name__ == "__main__":
     try:
         print("Server is running ✅")
@@ -27,15 +40,3 @@ if __name__ == "__main__":
     except:
         print("Error 501 : Can't run server ❌")
 #print(co.chat(message='Quel jour sommes nous').text)
-db = client["childs"]
-user1 = db["user1"]
-#user2 = db["user2"]
-#user3 = db["user3"]
-#this_food = {"food": "steak", "like": True}
-#user1.insert_one(this_food)
-
-@app.route("/food", methods=["POST"])
-def add_food():
-    data = flask.request.get_json()
-    result = user1.insert_one(data)
-    return flask.jsonify({"_id": str(result.inserted_id)}), 201
