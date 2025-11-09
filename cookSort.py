@@ -24,26 +24,49 @@ except:
 
 db = client["childs"]
 
-def add_food(data):
-    user_selected = db[data["user"]]
-    new_data = {'food': data["food"], 'like': data["like"]}
-    result = user_selected.insert_one(new_data)
-    return flask.jsonify({"_id": str(result.inserted_id)})
+def is_signed_food(data):
+    body = "{" + f'"user":"{data["user"]}","food":"{data["food"]}","like":{"true" if data['like'] else "false"}' + "}"
+    if time.time() - data["time"] < 120:
+        signature = hashlib.sha256((os.getenv('APP_SECRET') + body + f'{data["time"]}').encode()).hexdigest()
+        if signature == data.get("code"):
+            return True
+        else:
+            print("Wrong code")
+            return False
+    else:
+        print('Later')
+        return False
 @app.route("/generate", methods=["GET"], strict_slashes=False)
 def gen():
     return co.chat(message=f'Find a recipe (response in {flask.request.args.get("lang")})').text, 201
-@app.route("/proxy", methods=["POST"], strict_slashes=False)
-def verify():
+@app.route("/addfood", methods=["POST"], strict_slashes=False)
+def addfood():
     data = flask.request.get_json()
-    body = "{" + f'"user":{data.get("user")},"food":{data.get("food")},"like":{data.get("like")}' + "}"
-    if time.time() - data.get("time") < 120:
-        signature = hashlib.sha256((os.getenv('APP_SECRET') + body + data.get("time")).encode()).hexdigest()
-        if signature == data.get("code"):
-            return add_food(body), 201
-        else:
-            print("Wrong code")
+    if is_signed_food(data):
+        try:
+            user_selected = db[data.get("user")]
+            if user_selected.find_one({"food": data.get("food")}):
+                user_selected.update_one({"food": data.get("food")}, {"$set": {"like": data.get("like")}})
+                return f"{data.get("user")} was successfully added", 201
+            else:
+                new_data = {'food': data.get("food"), 'like': data.get("like")}
+                user_selected.insert_one(new_data)
+                return f"{data.get("user")} was successfully added", 201
+        except:
+            print("Can't add ingredient")
+            return "Can't add ingredient", 401
     else:
-        print('Later')
+        print("Can't add ingredient")
+        return "Can't add ingredient", 401
+@app.route('/removechild', methods=["POST"], strict_slashes=False)
+def removechild():
+    data = flask.request.get_json()
+    if data.get("name") in db.list_collection_names():
+        db[data.get("name")].drop()
+        return f'{data.get("name")} was deleted', 201
+    else:
+        print("Can't remove child")
+        return "Can't remove child", 401
 
 if __name__ == "__main__":
     try:
