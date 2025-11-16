@@ -1,4 +1,4 @@
-import cohere, os, dotenv, flask_cors, flask, pymongo, hashlib, time
+import cohere, os, dotenv, flask_cors, flask, pymongo, hashlib, time, requests
 
 def to_json(doc):
     doc["_id"] = str(doc["_id"])
@@ -11,6 +11,10 @@ URL_API = os.getenv('URL_API')
 app = flask.Flask(__name__)
 flask_cors.CORS(app)
 
+try:
+    print("Outbound IP:", requests.get("https://api.ipify.org").text)
+except:
+    pass
 try:
     co = cohere.Client(AI_KEY)
     print("Connected to AI ✅")
